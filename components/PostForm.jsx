@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { getPlant } from "../lib/plants";
 
-export default function PostForm({ onPostCreated }) {
+export default function PostForm({ plantId, onPostCreated }) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
@@ -47,6 +48,7 @@ export default function PostForm({ onPostCreated }) {
         student_name: name.trim(),
         content: content.trim(),
         photo_url,
+        plant_id: plantId,
       });
 
       if (insertError) throw insertError;
@@ -66,7 +68,9 @@ export default function PostForm({ onPostCreated }) {
 
   return (
     <form className="post-form" onSubmit={handleSubmit}>
-      <h2>🌱 오늘의 식물 이야기 남기기</h2>
+      <h2>
+        {getPlant(plantId).emoji} 오늘의 {getPlant(plantId).name} 이야기 남기기
+      </h2>
       <input
         type="text"
         placeholder="이름 또는 별명"

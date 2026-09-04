@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 
+const VALID_PLANT_IDS = ["basil", "tomato"];
+
 export async function POST(request) {
-  const { password, stage } = await request.json();
+  const { password, stage, plantId } = await request.json();
 
   if (!password || password !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json(
       { error: "비밀번호가 올바르지 않습니다." },
       { status: 401 }
     );
+  }
+
+  if (!VALID_PLANT_IDS.includes(plantId)) {
+    return NextResponse.json({ error: "plantId가 올바르지 않습니다." }, { status: 400 });
   }
 
   const stageNum = Number(stage);
@@ -21,7 +27,7 @@ export async function POST(request) {
 
   const { error } = await supabaseAdmin
     .from("plant_growth")
-    .upsert({ id: "main", stage: stageNum, updated_at: new Date().toISOString() });
+    .upsert({ id: plantId, stage: stageNum, updated_at: new Date().toISOString() });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

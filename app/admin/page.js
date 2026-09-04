@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { PLANTS, getPlant } from "../../lib/plants";
 import PlantCharacter from "../../components/PlantCharacter";
 
 export default function AdminPage() {
@@ -10,42 +11,42 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [stage, setStage] = useState(0);
-  const [stageUpdating, setStageUpdating] = useState(false);
+  const [stages, setStages] = useState({});
+  const [stageUpdating, setStageUpdating] = useState(null);
 
   useEffect(() => {
     if (loggedIn) {
       fetchPosts();
-      fetchStage();
+      fetchStages();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loggedIn]);
 
-  async function fetchStage() {
-    const { data } = await supabase
-      .from("plant_growth")
-      .select("stage")
-      .eq("id", "main")
-      .maybeSingle();
-    setStage(data?.stage ?? 0);
+  async function fetchStages() {
+    const { data } = await supabase.from("plant_growth").select("id, stage");
+    const map = {};
+    (data ?? []).forEach((row) => {
+      map[row.id] = row.stage;
+    });
+    setStages(map);
   }
 
-  async function handleSetStage(newStage) {
+  async function handleSetStage(plantId, newStage) {
     if (newStage < 0 || newStage > 5 || stageUpdating) return;
-    setStageUpdating(true);
+    setStageUpdating(plantId);
 
     const res = await fetch("/api/admin/set-stage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, stage: newStage }),
+      body: JSON.stringify({ password, plantId, stage: newStage }),
     });
 
     if (res.ok) {
-      setStage(newStage);
+      setStages((prev) => ({ ...prev, [plantId]: newStage }));
     } else {
       alert("성장 단계 변경에 실패했어요.");
     }
-    setStageUpdating(false);
+    setStageUpdating(null);
   }
 
   async function handleLogin(e) {
@@ -131,23 +132,46 @@ export default function AdminPage() {
       <h1>🔒 관리자 모드</h1>
       <p className="subtitle">부적절한 글이나 댓글을 삭제할 수 있어요.</p>
 
-      <div className="post-form" style={{ alignItems: "center" }}>
+      <div className="post-form">
         <h2>🌻 식물 성장 단계 조절</h2>
-        <PlantCharacter stage={stage} size={120} />
-        <div className="stage-control">
-          <button
-            onClick={() => handleSetStage(stage - 1)}
-            disabled={stage <= 0 || stageUpdating}
-          >
-            ◀
-          </button>
-          <span style={{ fontWeight: 700 }}>{stage} / 5 단계</span>
-          <button
-            onClick={() => handleSetStage(stage + 1)}
-            disabled={stage >= 5 || stageUpdating}
-          >
-            ▶
-          </button>
+        <div className="admin-plant-grid">
+          {PLANTS.map((plant) => {
+            const plantPosts = posts.filter((p) => p.plant_id === plant.id);
+            const commentCount = plantPosts.reduce(
+              (sum, p) => sum + (p.comments?.length ?? 0),
+              0
+            );
+            const stage = stages[plant.id] ?? 0;
+
+            return (
+              <div key={plant.id} className="admin-plant-card">
+                <strong>
+                  {plant.emoji} {plant.name}
+                </strong>
+                <PlantCharacter
+                  species={plant.id}
+                  stage={stage}
+                  commentCount={commentCount}
+                  size={110}
+                />
+                <div className="stage-control">
+                  <button
+                    onClick={() => handleSetStage(plant.id, stage - 1)}
+                    disabled={stage <= 0 || stageUpdating === plant.id}
+                  >
+                    ◀
+                  </button>
+                  <span style={{ fontWeight: 700 }}>{stage} / 5</span>
+                  <button
+                    onClick={() => handleSetStage(plant.id, stage + 1)}
+                    disabled={stage >= 5 || stageUpdating === plant.id}
+                  >
+                    ▶
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -159,7 +183,9 @@ export default function AdminPage() {
         posts.map((post) => (
           <div className="post-card" key={post.id}>
             <div className="post-header">
-              <strong>{post.student_name}</strong>
+              <strong>
+                {getPlant(post.plant_id).emoji} {post.student_name}
+              </strong>
               <span className="post-date">
                 {new Date(post.created_at).toLocaleString("ko-KR")}
               </span>
