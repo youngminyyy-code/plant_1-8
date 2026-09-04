@@ -1,0 +1,157 @@
+:root {
+  --green-dark: #2f6b3a;
+  --green: #4c9a5c;
+  --green-light: #e8f5e9;
+  --text: #1f2a1f;
+  --card-bg: #ffffff;
+  --border: #d8ead9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", -apple-system,
+    BlinkMacSystemFont, sans-serif;
+  background: var(--green-light);
+  color: var(--text);
+}
+
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+h1 {
+  text-align: center;
+  color: var(--green-dark);
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #567a5c;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+.post-form {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.post-form h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: var(--green-dark);
+}
+
+.post-form input,
+.post-form textarea,
+.comment-form input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.post-form button,
+.like-button,
+.comment-form button {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.post-form button:disabled,
+.like-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 13px;
+  margin: 0;
+}
+
+.post-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.post-date {
+  font-size: 12px;
+  color: #8a9a8b;
+}
+
+.post-photo {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  max-height: 320px;
+  object-fit: cover;
+}
+
+.post-content {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.like-button {
+  margin-bottom: 12px;
+}
+
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.comment-list li {
+  background: var(--green-light);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.comment-form {
+  display: flex;
+  gap: 6px;
+}
+
+.comment-form input:first-child {
+  flex: 0 0 80px;
+}
+
+.comment-form input:last-of-type {
+  flex: 1;
+}
