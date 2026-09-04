@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import PlantCharacter from "../../components/PlantCharacter";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -9,11 +10,43 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState(0);
+  const [stageUpdating, setStageUpdating] = useState(false);
 
   useEffect(() => {
-    if (loggedIn) fetchPosts();
+    if (loggedIn) {
+      fetchPosts();
+      fetchStage();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loggedIn]);
+
+  async function fetchStage() {
+    const { data } = await supabase
+      .from("plant_growth")
+      .select("stage")
+      .eq("id", "main")
+      .maybeSingle();
+    setStage(data?.stage ?? 0);
+  }
+
+  async function handleSetStage(newStage) {
+    if (newStage < 0 || newStage > 5 || stageUpdating) return;
+    setStageUpdating(true);
+
+    const res = await fetch("/api/admin/set-stage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, stage: newStage }),
+    });
+
+    if (res.ok) {
+      setStage(newStage);
+    } else {
+      alert("성장 단계 변경에 실패했어요.");
+    }
+    setStageUpdating(false);
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -97,6 +130,26 @@ export default function AdminPage() {
     <main className="container">
       <h1>🔒 관리자 모드</h1>
       <p className="subtitle">부적절한 글이나 댓글을 삭제할 수 있어요.</p>
+
+      <div className="post-form" style={{ alignItems: "center" }}>
+        <h2>🌻 식물 성장 단계 조절</h2>
+        <PlantCharacter stage={stage} size={120} />
+        <div className="stage-control">
+          <button
+            onClick={() => handleSetStage(stage - 1)}
+            disabled={stage <= 0 || stageUpdating}
+          >
+            ◀
+          </button>
+          <span style={{ fontWeight: 700 }}>{stage} / 5 단계</span>
+          <button
+            onClick={() => handleSetStage(stage + 1)}
+            disabled={stage >= 5 || stageUpdating}
+          >
+            ▶
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <p>불러오는 중...</p>
