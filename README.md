@@ -82,7 +82,36 @@ git push -u origin main
 
 ## 참고: 운영 관리
 
-- 부적절한 글/댓글은 Supabase 대시보드 > Table Editor 에서 직접 행을 삭제하면 돼요
-  (일반 학생 계정에는 삭제 권한을 열어두지 않았어요)
 - 학생에게는 실명 대신 별명 사용을 권장하세요
 - 무료 요금제로도 학급 규모(수십 명)는 충분히 사용 가능해요
+
+## 관리자 모드 (`/admin`)
+
+Supabase 대시보드에 매번 들어가지 않고, 사이트 안에서 바로 글/댓글을 삭제할 수 있는
+비밀번호 보호 페이지예요. 학생용 홈페이지에는 링크를 걸어두지 않았으니 주소를 아는
+선생님만 `사이트주소/admin`으로 직접 접속하면 됩니다.
+
+### 추가 환경변수 설정 필요
+
+`.env.local`에 두 가지를 더 추가해야 작동해요:
+
+```
+ADMIN_PASSWORD=원하는_관리자_비밀번호
+SUPABASE_SERVICE_ROLE_KEY=Supabase의_secret_key_값
+```
+
+- `ADMIN_PASSWORD`: 직접 정하는 비밀번호 (학생들에게 알려주지 않기)
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase 대시보드 > Project Settings > API 페이지에서
+  **secret key** (예전 이름: `service_role`) 값을 복사. **`anon`/`publishable` 키와
+  달리 이 키는 절대 외부에 노출되면 안 돼요** — `NEXT_PUBLIC_` 접두사가 없어서
+  브라우저로는 전송되지 않고 서버(API Route)에서만 사용됩니다.
+
+Vercel에 배포된 사이트에서도 작동하게 하려면, Vercel 프로젝트 **Settings > Environment
+Variables**에도 위 두 값을 똑같이 추가해주세요.
+
+### 사용법
+
+1. `사이트주소/admin` 접속
+2. 관리자 비밀번호 입력
+3. 전체 글 목록이 보이고, 각 글/댓글 옆 **삭제** 버튼으로 바로 제거 가능
+   (글을 삭제하면 그 글에 달린 댓글·응원도 함께 삭제돼요)

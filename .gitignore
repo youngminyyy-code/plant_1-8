@@ -13,3 +13,7 @@ out/
 # misc
 .DS_Store
 *.log
+
+# next dev가 자동 생성하는 AI 에이전트 안내 파일 (매번 재생성됨)
+/AGENTS.md
+/CLAUDE.md
