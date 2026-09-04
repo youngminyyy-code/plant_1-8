@@ -127,6 +127,28 @@ h1 {
   margin-bottom: 12px;
 }
 
+.reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.reaction-pill {
+  border: 1px solid var(--border);
+  background: var(--green-light);
+  color: var(--green-dark);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reaction-pill:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .comment-list {
   list-style: none;
   padding: 0;
@@ -314,6 +336,13 @@ h1 {
   height: 100%;
   object-fit: cover;
   border-radius: 999px;
+}
+
+.growth-legend {
+  text-align: center;
+  font-size: 12px;
+  color: #6b8a70;
+  margin-top: 8px;
 }
 
 .growth-stats {

@@ -1,4 +1,4 @@
-import { commentTier } from "../lib/plants";
+import { faceTier } from "../lib/plants";
 
 const STAGE_LABELS = [
   "심은 지 얼마 안 됐어요",
@@ -280,11 +280,11 @@ function Plant({ id, theme, species, stage }) {
 export default function PlantCharacter({
   species = "basil",
   stage = 0,
-  commentCount = 0,
+  storyCount = 0,
   size = 220,
 }) {
   const clampedStage = Math.min(5, Math.max(0, stage));
-  const tier = commentTier(commentCount);
+  const tier = faceTier(storyCount);
   const theme = POT_THEME[species] ?? POT_THEME.basil;
 
   return (

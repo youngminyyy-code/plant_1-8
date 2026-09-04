@@ -1,4 +1,4 @@
-import LikeButton from "./LikeButton";
+import ReactionBar from "./ReactionBar";
 import CommentSection from "./CommentSection";
 
 export default function PostCard({ post }) {
@@ -14,7 +14,7 @@ export default function PostCard({ post }) {
         <img src={post.photo_url} alt="식물 사진" className="post-photo" />
       )}
       <p className="post-content">{post.content}</p>
-      <LikeButton postId={post.id} />
+      <ReactionBar postId={post.id} />
       <CommentSection postId={post.id} />
     </div>
   );

@@ -137,10 +137,6 @@ export default function AdminPage() {
         <div className="admin-plant-grid">
           {PLANTS.map((plant) => {
             const plantPosts = posts.filter((p) => p.plant_id === plant.id);
-            const commentCount = plantPosts.reduce(
-              (sum, p) => sum + (p.comments?.length ?? 0),
-              0
-            );
             const stage = stages[plant.id] ?? 0;
 
             return (
@@ -151,7 +147,7 @@ export default function AdminPage() {
                 <PlantCharacter
                   species={plant.id}
                   stage={stage}
-                  commentCount={commentCount}
+                  storyCount={plantPosts.length}
                   size={110}
                 />
                 <div className="stage-control">
