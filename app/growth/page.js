@@ -22,6 +22,17 @@ const OPACITY = [0.32, 0.5, 0.66, 0.83, 1];
 const CENTER_EXCLUSION = 24; // 캐릭터가 차지하는 반지름(%)
 const MARGIN = 1.5;
 
+// 날짜가 지날수록 옅어지는 정도: 하루 지날 때마다 15%씩 흐려지고,
+// 아무리 오래돼도 최소한의 흐릿한 흔적은 남겨둬요.
+const DAY_DECAY = 0.85;
+const MIN_AGE_FACTOR = 0.18;
+const MIN_OPACITY = 0.15;
+
+function ageFactorFor(createdAt) {
+  const ageDays = Math.max(0, (Date.now() - new Date(createdAt).getTime()) / 86400000);
+  return Math.max(MIN_AGE_FACTOR, Math.pow(DAY_DECAY, ageDays));
+}
+
 const GOLDEN_ANGLE = 2.399963229728653; // 씨앗 배열(피보나치 나선)에 쓰이는 각도
 
 // 이야기(글) 하나하나를 원으로 표현해요.
@@ -36,16 +47,23 @@ function buildLayout(posts) {
     const reactionCount = p.likes?.[0]?.count ?? 0;
     const sizeTier = fiveTier(commentCount);
     const opacityTier = fiveTier(reactionCount);
+    const ageFactor = ageFactorFor(p.created_at);
+    const finalOpacity = Math.max(MIN_OPACITY, OPACITY[opacityTier] * ageFactor);
+    const grayscalePct = Math.min(75, Math.round((1 - ageFactor) * 90));
+
     return {
       id: p.id,
       student_name: p.student_name,
       photo_url: p.photo_url,
       snippet: p.content?.slice(0, 16) ?? "",
+      created_at: p.created_at,
       commentCount,
       reactionCount,
       sizeTier,
       opacityTier,
       diameterPct: SIZE_PCT[sizeTier],
+      finalOpacity,
+      grayscalePct,
     };
   });
 
@@ -208,10 +226,13 @@ function PlantSection({ plant }) {
               left: `${b.x}%`,
               top: `${b.y}%`,
               fontSize: FONT_PX[b.sizeTier],
-              opacity: OPACITY[b.opacityTier],
+              opacity: b.finalOpacity,
+              filter: b.grayscalePct > 0 ? `grayscale(${b.grayscalePct}%)` : undefined,
               zIndex: b.sizeTier * 10 + b.opacityTier + 1,
             }}
-            title={`${b.student_name} · 댓글 ${b.commentCount} · 공감 ${b.reactionCount}`}
+            title={`${b.student_name} · ${new Date(b.created_at).toLocaleDateString(
+              "ko-KR"
+            )} · 댓글 ${b.commentCount} · 공감 ${b.reactionCount}`}
           >
             {b.photo_url ? <img src={b.photo_url} alt="" /> : <span>{b.snippet}</span>}
           </div>
@@ -222,7 +243,10 @@ function PlantSection({ plant }) {
         </div>
       </div>
 
-      <p className="growth-legend">💬 댓글이 많을수록 원이 커지고, 🙌 공감이 많을수록 원이 선명해져요</p>
+      <p className="growth-legend">
+        💬 댓글이 많을수록 원이 커지고, 🙌 공감이 많을수록 선명해져요. 시간이 지난 이야기는
+        점점 흐려져요.
+      </p>
 
       {loading && <p>불러오는 중...</p>}
       {!loading && posts.length === 0 && (
