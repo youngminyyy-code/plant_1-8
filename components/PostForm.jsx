@@ -1,8 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { getPlant } from "../lib/plants";
+import { prepareImageFile } from "../lib/imageUpload";
+
+const COOLDOWN_MS = 30_000; // 같은 브라우저에서 이 시간 안에는 연속으로 글을 못 써요
+
+function cooldownKey(plantId) {
+  return `lastPostAt_${plantId}`;
+}
+
+function getRemainingCooldown(plantId) {
+  try {
+    const last = Number(localStorage.getItem(cooldownKey(plantId)) ?? 0);
+    const remaining = COOLDOWN_MS - (Date.now() - last);
+    return remaining > 0 ? remaining : 0;
+  } catch {
+    return 0;
+  }
+}
 
 export default function PostForm({ plantId, onPostCreated }) {
   const [name, setName] = useState("");
@@ -10,9 +27,29 @@ export default function PostForm({ plantId, onPostCreated }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [cooldownMs, setCooldownMs] = useState(0);
+
+  useEffect(() => {
+    setCooldownMs(getRemainingCooldown(plantId));
+  }, [plantId]);
+
+  useEffect(() => {
+    if (cooldownMs <= 0) return;
+    const timer = setInterval(() => {
+      const remaining = getRemainingCooldown(plantId);
+      setCooldownMs(remaining);
+      if (remaining <= 0) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownMs > 0, plantId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (getRemainingCooldown(plantId) > 0) {
+      setCooldownMs(getRemainingCooldown(plantId));
+      return;
+    }
 
     if (!name.trim() || !content.trim()) {
       setError("이름과 내용을 모두 입력해주세요.");
@@ -26,14 +63,17 @@ export default function PostForm({ plantId, onPostCreated }) {
       let photo_url = null;
 
       if (file) {
-        const fileExt = file.name.split(".").pop();
+        const { file: preparedFile, error: prepError } = await prepareImageFile(file);
+        if (prepError) throw new Error(prepError);
+
+        const fileExt = preparedFile.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random()
           .toString(36)
           .slice(2)}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from("plant-photos")
-          .upload(fileName, file);
+          .upload(fileName, preparedFile);
 
         if (uploadError) throw uploadError;
 
@@ -53,6 +93,13 @@ export default function PostForm({ plantId, onPostCreated }) {
 
       if (insertError) throw insertError;
 
+      try {
+        localStorage.setItem(cooldownKey(plantId), String(Date.now()));
+      } catch {
+        // localStorage를 못 쓰는 환경이면 조용히 넘어가요
+      }
+      setCooldownMs(COOLDOWN_MS);
+
       setName("");
       setContent("");
       setFile(null);
@@ -60,11 +107,13 @@ export default function PostForm({ plantId, onPostCreated }) {
       onPostCreated();
     } catch (err) {
       console.error(err);
-      setError("업로드 중 문제가 생겼어요. 다시 시도해주세요.");
+      setError(err.message || "업로드 중 문제가 생겼어요. 다시 시도해주세요.");
     } finally {
       setUploading(false);
     }
   }
+
+  const onCooldown = cooldownMs > 0;
 
   return (
     <form className="post-form" onSubmit={handleSubmit}>
@@ -85,12 +134,16 @@ export default function PostForm({ plantId, onPostCreated }) {
       />
       <input
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         onChange={(e) => setFile(e.target.files?.[0] ?? null)}
       />
       {error && <p className="error">{error}</p>}
-      <button type="submit" disabled={uploading}>
-        {uploading ? "올리는 중..." : "올리기"}
+      <button type="submit" disabled={uploading || onCooldown}>
+        {uploading
+          ? "올리는 중..."
+          : onCooldown
+          ? `${Math.ceil(cooldownMs / 1000)}초 후에 다시 올릴 수 있어요`
+          : "올리기"}
       </button>
     </form>
   );
