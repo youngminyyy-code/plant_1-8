@@ -149,6 +149,12 @@ h1 {
   cursor: default;
 }
 
+.reaction-pill.active {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+
 .comment-list {
   list-style: none;
   padding: 0;

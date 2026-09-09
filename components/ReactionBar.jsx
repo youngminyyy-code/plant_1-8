@@ -3,41 +3,52 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { REACTION_EMOJIS } from "../lib/plants";
+import { getAnonId } from "../lib/anonId";
 
 export default function ReactionBar({ postId }) {
   const [counts, setCounts] = useState({});
-  const [busy, setBusy] = useState(false);
+  const [mine, setMine] = useState(new Set());
+  const [busyEmoji, setBusyEmoji] = useState(null);
 
   useEffect(() => {
-    fetchCounts();
+    fetchReactions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function fetchCounts() {
-    const { data } = await supabase.from("likes").select("emoji").eq("post_id", postId);
-    const map = {};
+  async function fetchReactions() {
+    const anonId = getAnonId();
+    const { data } = await supabase
+      .from("likes")
+      .select("emoji, student_name")
+      .eq("post_id", postId);
+
+    const countMap = {};
+    const mineSet = new Set();
     (data ?? []).forEach((row) => {
-      map[row.emoji] = (map[row.emoji] ?? 0) + 1;
+      countMap[row.emoji] = (countMap[row.emoji] ?? 0) + 1;
+      if (row.student_name === anonId) mineSet.add(row.emoji);
     });
-    setCounts(map);
+    setCounts(countMap);
+    setMine(mineSet);
   }
 
   async function handleReact(emoji) {
-    if (busy) return;
-    const name = window.prompt("공감을 남길 이름(별명)을 입력해주세요");
-    if (!name || !name.trim()) return;
+    if (busyEmoji || mine.has(emoji)) return;
+    setBusyEmoji(emoji);
 
-    setBusy(true);
+    const anonId = getAnonId();
     const { error } = await supabase
       .from("likes")
-      .insert({ post_id: postId, student_name: name.trim(), emoji });
+      .insert({ post_id: postId, student_name: anonId, emoji });
 
     if (!error) {
-      fetchCounts();
+      setCounts((prev) => ({ ...prev, [emoji]: (prev[emoji] ?? 0) + 1 }));
+      setMine((prev) => new Set(prev).add(emoji));
     } else if (error.code === "23505") {
-      alert("이미 이 이모티콘으로 공감했어요!");
+      // 이미 반영돼 있던 경우 - 그냥 눌린 상태로 맞춰줌
+      setMine((prev) => new Set(prev).add(emoji));
     }
-    setBusy(false);
+    setBusyEmoji(null);
   }
 
   return (
@@ -45,9 +56,9 @@ export default function ReactionBar({ postId }) {
       {REACTION_EMOJIS.map((emoji) => (
         <button
           key={emoji}
-          className="reaction-pill"
+          className={`reaction-pill ${mine.has(emoji) ? "active" : ""}`}
           onClick={() => handleReact(emoji)}
-          disabled={busy}
+          disabled={busyEmoji === emoji}
         >
           {emoji} {counts[emoji] ?? 0}
         </button>
